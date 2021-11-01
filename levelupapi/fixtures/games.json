@@ -1,0 +1,26 @@
+[
+    {
+        "model": "levelupapi.game",
+        "pk": 1,
+        "fields": {
+            "game_type": 1,
+            "title": "Trouble",
+            "maker": "Hasbro",
+            "gamer": 1,
+            "number_of_players": 4,
+            "skill_level": 5
+        }
+    },
+    {
+        "model": "levelupapi.game",
+        "pk": 2,
+        "fields": {
+            "game_type": 2,
+            "title": "Dungeons and Dragons",
+            "maker": "Wizards of the Coast",
+            "gamer": 1,
+            "number_of_players": 8,
+            "skill_level": 10
+        }
+    }
+]
