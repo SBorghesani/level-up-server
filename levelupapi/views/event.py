@@ -8,10 +8,49 @@ from rest_framework.response import Response
 from rest_framework import serializers
 from rest_framework import status
 from levelupapi.models import Game, Event, Gamer
+from rest_framework.decorators import action
 
 
 class EventView(ViewSet):
     """Level up games"""
+
+    @action(methods=['post', 'delete'], detail=True)
+    def signup(self, request, pk=None):
+        """Managing gamers signing up for events"""
+        # Django uses the `Authorization` header to determine
+        # which user is making the request to sign up
+        gamer = Gamer.objects.get(user=request.auth.user)
+
+        try:
+            # Handle the case if the client specifies a game
+            # that doesn't exist
+            event = Event.objects.get(pk=pk)
+        except Event.DoesNotExist:
+            return Response(
+                {'message': 'Event does not exist.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # A gamer wants to sign up for an event
+        if request.method == "POST":
+            try:
+                # Using the attendees field on the event makes it simple to add a gamer to the event
+                # .add(gamer) will insert into the join table a new row the gamer_id and the event_id
+                event.attendees.add(gamer)
+                return Response({}, status=status.HTTP_201_CREATED)
+            except Exception as ex:
+                return Response({'message': ex.args[0]})
+
+        # User wants to leave a previously joined event
+        elif request.method == "DELETE":
+            try:
+                # The many to many relationship has a .remove method that removes the gamer from the attendees list
+                # The method deletes the row in the join table that has the gamer_id and event_id
+                event.attendees.remove(gamer)
+                return Response(None, status=status.HTTP_204_NO_CONTENT)
+            except Exception as ex:
+                return Response({'message': ex.args[0]})
+
 
     def create(self, request):
         """Handle POST operations
@@ -122,7 +161,8 @@ class EventView(ViewSet):
         """
         # Get all game records from the database
         events = Event.objects.all()
-
+        gamer = Gamer.objects.get(user=request.auth.user)
+        game = self.request.query_params.get('gameId', None)
         # Support filtering games by type
         #    http://localhost:8000/games?type=1
         #
@@ -130,6 +170,12 @@ class EventView(ViewSet):
         # game_type = self.request.query_params.get('type', None)
         # if game_type is not None:
         #     games = games.filter(game_type__id=game_type)
+
+        for event in events:
+            event.joined = gamer in event.attendees.all()
+
+        if game is not None:
+            events = events.filter(game__id=type)
 
         serializer = EventSerializer(
             events, many=True, context={'request': request})
@@ -152,9 +198,9 @@ class EventSerializer(serializers.ModelSerializer):
     Arguments:
         serializer type
     """
-
+    joined = serializers.BooleanField(required=False)
     organizer = EventGamerSerializer(many=False)
     class Meta:
         model = Event
-        fields = ('id', 'game', 'description', 'date', 'time', 'organizer')
+        fields = ('id', 'game', 'description', 'date', 'time', 'organizer', "attendees", "joined")
         depth = 1
