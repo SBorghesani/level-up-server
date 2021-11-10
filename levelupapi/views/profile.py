@@ -22,23 +22,24 @@ def user_profile(request):
     # attending = 
     attending = gamer.attending.all()
     hosting = gamer.event_set.all()
+    # event_set is default name for organizer (see event model)
 
     # TODO: Use the orm to filter events if the gamer is hosting the event
     # hosting =
     
 
-    attending = EventSerializer(
+    attending_serialized = EventSerializer(
         attending, many=True, context={'request': request})
-    hosting = EventSerializer(
+    hosting_serialized = EventSerializer(
         hosting, many=True, context={'request': request})
-    gamer = GamerSerializer(
+    gamer_serialized = GamerSerializer(
         gamer, many=False, context={'request': request})
 
     # Manually construct the JSON structure you want in the response
     profile = {
-        "gamer": gamer.data,
-        "attending": attending.data,
-        "hosting": hosting.data
+        "gamer": gamer_serialized.data,
+        "attending": attending_serialized.data,
+        "hosting": hosting_serialized.data
     }
 
     return Response(profile)
