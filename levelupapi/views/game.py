@@ -2,6 +2,7 @@
 from django.core.exceptions import ValidationError
 from rest_framework import status
 from django.http import HttpResponseServerError
+from django.db.models import Count, Q
 from rest_framework.viewsets import ViewSet
 from rest_framework.response import Response
 from rest_framework import serializers
@@ -122,7 +123,10 @@ class GameView(ViewSet):
             Response -- JSON serialized list of games
         """
         # Get all game records from the database
-        games = Game.objects.all()
+        
+        # games = Game.objects.all()
+        games = Game.objects.annotate(event_count=Count('events'))
+
 
         # Support filtering games by type
         #    http://localhost:8000/games?type=1
@@ -132,17 +136,23 @@ class GameView(ViewSet):
         if game_type is not None:
             games = games.filter(game_type__id=game_type)
 
+        # search=self.request.query_params.get('search', None)
+        # Game.objects.filter(
+        #     Q(title__startswith=search) |
+        #     Q(maker__startswith=search)
+        # )
+
         serializer = GameSerializer(
             games, many=True, context={'request': request})
         return Response(serializer.data)
 
 class GameSerializer(serializers.ModelSerializer):
     """JSON serializer for games
-
     Arguments:
         serializer type
     """
+    event_count = serializers.IntegerField(default=None)
     class Meta:
         model = Game
-        fields = ('id', 'title', 'maker', 'number_of_players', 'skill_level', 'game_type', 'gamer')
+        fields = ('id', 'title', 'maker', 'number_of_players', 'skill_level', 'game_type', 'gamer', "event_count")
         depth = 1

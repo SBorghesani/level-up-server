@@ -2,6 +2,7 @@
 from django.core.exceptions import ValidationError
 from rest_framework import status
 from django.contrib.auth import get_user_model
+from django.db.models import Count
 from django.http import HttpResponseServerError
 from rest_framework.viewsets import ViewSet
 from rest_framework.response import Response
@@ -104,7 +105,10 @@ class EventView(ViewSet):
             #   http://localhost:8000/events/2
             #
             # The `2` at the end of the route becomes `pk`
-            event = Event.objects.get(pk=pk)
+            event = Event.objects.annotate(attending_count=Count('attendees')).get(pk=pk)
+            
+            
+            # event = Event.objects.get(pk=pk)
             serializer = EventSerializer(event, context={'request': request})
             return Response(serializer.data)
         except Exception as ex:
@@ -160,9 +164,10 @@ class EventView(ViewSet):
             Response -- JSON serialized list of games
         """
         # Get all game records from the database
-        events = Event.objects.all()
+        # events = Event.objects.all()
         gamer = Gamer.objects.get(user=request.auth.user)
         game = self.request.query_params.get('gameId', None)
+        events = Event.objects.annotate(attending_count=Count('attendees'))
         # Support filtering games by type
         #    http://localhost:8000/games?type=1
         #
@@ -198,9 +203,10 @@ class EventSerializer(serializers.ModelSerializer):
     Arguments:
         serializer type
     """
+    attending_count = serializers.IntegerField(default=None)
     joined = serializers.BooleanField(required=False)
     organizer = EventGamerSerializer(many=False)
     class Meta:
         model = Event
-        fields = ('id', 'game', 'description', 'date', 'time', 'organizer', "attendees", "joined")
+        fields = ('id', 'game', 'description', 'date', 'time', 'organizer', "attendees", "joined", 'attending_count')
         depth = 1
