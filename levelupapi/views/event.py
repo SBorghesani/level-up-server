@@ -2,7 +2,7 @@
 from django.core.exceptions import ValidationError
 from rest_framework import status
 from django.contrib.auth import get_user_model
-from django.db.models import Count
+from django.db.models import Count, Q
 from django.http import HttpResponseServerError
 from rest_framework.viewsets import ViewSet
 from rest_framework.response import Response
@@ -167,7 +167,12 @@ class EventView(ViewSet):
         # events = Event.objects.all()
         gamer = Gamer.objects.get(user=request.auth.user)
         game = self.request.query_params.get('gameId', None)
-        events = Event.objects.annotate(attending_count=Count('attendees'))
+        events = Event.objects.annotate(
+            attending_count=Count('attendees'),
+            joined=Count(
+                'attendees',
+                filter=Q(attendees=gamer)
+            ))
         # Support filtering games by type
         #    http://localhost:8000/games?type=1
         #
@@ -176,8 +181,9 @@ class EventView(ViewSet):
         # if game_type is not None:
         #     games = games.filter(game_type__id=game_type)
 
-        for event in events:
-            event.joined = gamer in event.attendees.all()
+        # looping is no longer needed due to the Q method on line 174
+        # for event in events:
+        #     event.joined = gamer in event.attendees.all()
 
         if game is not None:
             events = events.filter(game__id=type)

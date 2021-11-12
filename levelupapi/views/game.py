@@ -66,7 +66,12 @@ class GameView(ViewSet):
             #   http://localhost:8000/games/2
             #
             # The `2` at the end of the route becomes `pk`
-            game = Game.objects.get(pk=pk)
+            gamer = Gamer.objects.get(user=request.auth.user)
+            game = Game.objects.annotate(event_count=Count('events'),
+                user_event_count=Count(
+                    'events',
+                    filter=Q(events__organizer=gamer)
+                )).get(pk=pk)
             serializer = GameSerializer(game, context={'request': request})
             return Response(serializer.data)
         except Exception as ex:
@@ -125,8 +130,13 @@ class GameView(ViewSet):
         # Get all game records from the database
         
         # games = Game.objects.all()
-        games = Game.objects.annotate(event_count=Count('events'))
-
+        gamer = Gamer.objects.get(user=request.auth.user)
+        games = Game.objects.annotate(
+            event_count=Count('events'),
+            user_event_count=Count(
+                'events',
+                filter=Q(events__organizer=gamer)
+            ))
 
         # Support filtering games by type
         #    http://localhost:8000/games?type=1
@@ -151,8 +161,9 @@ class GameSerializer(serializers.ModelSerializer):
     Arguments:
         serializer type
     """
+    user_event_count = serializers.IntegerField(default=None)
     event_count = serializers.IntegerField(default=None)
     class Meta:
         model = Game
-        fields = ('id', 'title', 'maker', 'number_of_players', 'skill_level', 'game_type', 'gamer', "event_count")
+        fields = ('id', 'title', 'maker', 'number_of_players', 'skill_level', 'game_type', 'gamer', "event_count", 'user_event_count')
         depth = 1
