@@ -35,7 +35,7 @@ class GameTests(APITestCase):
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token.key)
 
         # Assert that the response status code is 201 (CREATED)
-        # self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
         # SEED THE DATABASE WITH A GAMETYPE
         # This is necessary because the API does not
@@ -197,4 +197,4 @@ class GameTests(APITestCase):
         response = self.client.get(url)
 
         # Assert that the response status code is 404 (NOT FOUND)
-        # self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
