@@ -83,7 +83,7 @@ class EventView(ViewSet):
                 game = game
             )
             serializer = EventSerializer(event, context={'request': request})
-            return Response(serializer.data)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
 
         # If anything went wrong, catch the exception and
         # send a response with a 400 status code to tell the
@@ -112,7 +112,7 @@ class EventView(ViewSet):
             serializer = EventSerializer(event, context={'request': request})
             return Response(serializer.data)
         except Exception as ex:
-            return HttpResponseServerError(ex)
+            return Response({'message', 'Event Not Found'}, status=status.HTTP_404_NOT_FOUND)
 
     def update(self, request, pk=None):
         """Handle PUT requests for a event
@@ -201,7 +201,7 @@ class EventGamerSerializer(serializers.ModelSerializer):
     user = EventUserSerializer(many=False)
     class Meta:
         model = Gamer
-        fields = ['user']
+        fields = ['user', 'id']
 
 class EventSerializer(serializers.ModelSerializer):
     """JSON serializer for games
